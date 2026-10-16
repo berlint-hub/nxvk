@@ -1,0 +1,186 @@
+=== nvk_subtile_diag ===
+diagnostic schema=1 build-id=4662fe0a6c3486588f56fb4f9c0ab7422ae595f83b17e3dfdf031c84909a5b79
+phases=10 samples=15 warmup_ms=2000 cache=enabled; PASS means readbacks, not a speedup
+HOS=22.1.0 operation_mode=0 performance_mode=0
+process memory limit=3343908864 rc=0x00000000
+inherited NVK_DEBUG=(unset); probe replaces it with subtiling trace only
+inherited NAK_DEBUG=(unset); probe clears it
+environment: NVK_DEBUG=subtiling MESA_SHADER_CACHE_DISABLE=0 MESA_SHADER_CACHE_DIR=sdmc:/nxvk_diag/cache; clocks are never changed by this probe
+clocks: read-only clkrst init rc=0x00000000
+clocks: module=0 open rc=0x00000000
+clocks: module=1 open rc=0x00000000
+clocks: module=2 open rc=0x00000000
+PHASE 1/10 requested=default knob=unset (driver choice) cache=enabled
+phase modes: operation=0 performance=0
+bringup: vkCreateInstance -> 0
+bringup: device 'NVIDIA Tegra X1 (NVK gm20b)' api=1.4.354 vendor=0x10de dev=0x0
+bringup: vkCreateDevice -> 0
+driver: name=NVK info=Mesa 26.2.2 (git-d5b1f3fc3f) id=24
+pipelineCacheUUID=bbb88c411731c14c52b45a3fef3a5999 timestampPeriod_ns=1.000000
+  [vk/INFO] ../../../src/nouveau/vulkan/nvk_shader.c:948: NVK_SUBTILING sm=53 requested=0x00000000 selected=0x087f6080 no_t210=0
+cold probe (not a steady-state result): frag_gpu_ms=3.832512 comp_gpu_ms=6.269280
+clocks cold-before: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+clocks cold-after: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warmup: 2002.058 ms, 121 fragment/compute pairs (minimum 2000 ms and 16 pairs)
+clocks post-warmup: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warm GPU ms: frag median=3.829120 min=3.827904 max=3.830208; comp median=6.268480 min=6.266016 max=6.271200
+READBACK phase=0 colour=0xb1884637f4710a21 compute=0xb81d92b31a9f5e31
+teardown: instance/device destroyed
+PHASE 2/10 requested=t210 knob=0x087f6080 cache=enabled
+phase modes: operation=0 performance=0
+bringup: vkCreateInstance -> 0
+bringup: device 'NVIDIA Tegra X1 (NVK gm20b)' api=1.4.354 vendor=0x10de dev=0x0
+bringup: vkCreateDevice -> 0
+driver: name=NVK info=Mesa 26.2.2 (git-d5b1f3fc3f) id=24
+pipelineCacheUUID=bbb88c411731c14c52b45a3fef3a5999 timestampPeriod_ns=1.000000
+  [vk/INFO] ../../../src/nouveau/vulkan/nvk_shader.c:948: NVK_SUBTILING sm=53 requested=0x087f6080 selected=0x087f6080 no_t210=0
+cold probe (not a steady-state result): frag_gpu_ms=3.832928 comp_gpu_ms=6.271360
+clocks cold-before: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+clocks cold-after: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warmup: 2002.019 ms, 121 fragment/compute pairs (minimum 2000 ms and 16 pairs)
+clocks post-warmup: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warm GPU ms: frag median=3.829664 min=3.828576 max=3.831488; comp median=6.269184 min=6.267360 max=6.272192
+READBACK phase=1 colour=0xb1884637f4710a21 compute=0xb81d92b31a9f5e31
+teardown: instance/device destroyed
+PHASE 3/10 requested=generic knob=0x20164010 cache=enabled
+phase modes: operation=0 performance=0
+bringup: vkCreateInstance -> 0
+bringup: device 'NVIDIA Tegra X1 (NVK gm20b)' api=1.4.354 vendor=0x10de dev=0x0
+bringup: vkCreateDevice -> 0
+driver: name=NVK info=Mesa 26.2.2 (git-d5b1f3fc3f) id=24
+pipelineCacheUUID=bbb88c411731c14c52b45a3fef3a5999 timestampPeriod_ns=1.000000
+  [vk/INFO] ../../../src/nouveau/vulkan/nvk_shader.c:948: NVK_SUBTILING sm=53 requested=0x20164010 selected=0x20164010 no_t210=0
+cold probe (not a steady-state result): frag_gpu_ms=4.777568 comp_gpu_ms=6.267584
+clocks cold-before: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+clocks cold-after: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warmup: 2007.706 ms, 111 fragment/compute pairs (minimum 2000 ms and 16 pairs)
+clocks post-warmup: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warm GPU ms: frag median=4.773408 min=4.772896 max=4.782432; comp median=6.268000 min=6.266048 max=6.272736
+READBACK phase=2 colour=0xb1884637f4710a21 compute=0xb81d92b31a9f5e31
+teardown: instance/device destroyed
+PHASE 4/10 requested=t210 knob=0x087f6080 cache=enabled
+phase modes: operation=0 performance=0
+bringup: vkCreateInstance -> 0
+bringup: device 'NVIDIA Tegra X1 (NVK gm20b)' api=1.4.354 vendor=0x10de dev=0x0
+bringup: vkCreateDevice -> 0
+driver: name=NVK info=Mesa 26.2.2 (git-d5b1f3fc3f) id=24
+pipelineCacheUUID=bbb88c411731c14c52b45a3fef3a5999 timestampPeriod_ns=1.000000
+  [vk/INFO] ../../../src/nouveau/vulkan/nvk_shader.c:948: NVK_SUBTILING sm=53 requested=0x087f6080 selected=0x087f6080 no_t210=0
+cold probe (not a steady-state result): frag_gpu_ms=3.831744 comp_gpu_ms=6.271584
+clocks cold-before: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+clocks cold-after: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warmup: 2002.143 ms, 121 fragment/compute pairs (minimum 2000 ms and 16 pairs)
+clocks post-warmup: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warm GPU ms: frag median=3.829856 min=3.828608 max=3.838048; comp median=6.269888 min=6.265888 max=6.272512
+READBACK phase=3 colour=0xb1884637f4710a21 compute=0xb81d92b31a9f5e31
+teardown: instance/device destroyed
+PHASE 5/10 requested=generic knob=0x20164010 cache=enabled
+phase modes: operation=0 performance=0
+bringup: vkCreateInstance -> 0
+bringup: device 'NVIDIA Tegra X1 (NVK gm20b)' api=1.4.354 vendor=0x10de dev=0x0
+bringup: vkCreateDevice -> 0
+driver: name=NVK info=Mesa 26.2.2 (git-d5b1f3fc3f) id=24
+pipelineCacheUUID=bbb88c411731c14c52b45a3fef3a5999 timestampPeriod_ns=1.000000
+  [vk/INFO] ../../../src/nouveau/vulkan/nvk_shader.c:948: NVK_SUBTILING sm=53 requested=0x20164010 selected=0x20164010 no_t210=0
+cold probe (not a steady-state result): frag_gpu_ms=4.785856 comp_gpu_ms=6.271360
+clocks cold-before: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+clocks cold-after: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warmup: 2007.693 ms, 111 fragment/compute pairs (minimum 2000 ms and 16 pairs)
+clocks post-warmup: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warm GPU ms: frag median=4.774080 min=4.773184 max=4.797280; comp median=6.269728 min=6.267488 max=6.273472
+READBACK phase=4 colour=0xb1884637f4710a21 compute=0xb81d92b31a9f5e31
+teardown: instance/device destroyed
+PHASE 6/10 requested=default knob=unset (driver choice) cache=enabled
+phase modes: operation=0 performance=0
+bringup: vkCreateInstance -> 0
+bringup: device 'NVIDIA Tegra X1 (NVK gm20b)' api=1.4.354 vendor=0x10de dev=0x0
+bringup: vkCreateDevice -> 0
+driver: name=NVK info=Mesa 26.2.2 (git-d5b1f3fc3f) id=24
+pipelineCacheUUID=bbb88c411731c14c52b45a3fef3a5999 timestampPeriod_ns=1.000000
+  [vk/INFO] ../../../src/nouveau/vulkan/nvk_shader.c:948: NVK_SUBTILING sm=53 requested=0x00000000 selected=0x087f6080 no_t210=0
+cold probe (not a steady-state result): frag_gpu_ms=3.833184 comp_gpu_ms=6.270464
+clocks cold-before: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+clocks cold-after: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warmup: 2002.338 ms, 121 fragment/compute pairs (minimum 2000 ms and 16 pairs)
+clocks post-warmup: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warm GPU ms: frag median=3.830560 min=3.829408 max=3.853856; comp median=6.269824 min=6.267072 max=6.275264
+READBACK phase=5 colour=0xb1884637f4710a21 compute=0xb81d92b31a9f5e31
+teardown: instance/device destroyed
+PHASE 7/10 requested=generic knob=0x20164010 cache=enabled
+phase modes: operation=0 performance=0
+bringup: vkCreateInstance -> 0
+bringup: device 'NVIDIA Tegra X1 (NVK gm20b)' api=1.4.354 vendor=0x10de dev=0x0
+bringup: vkCreateDevice -> 0
+driver: name=NVK info=Mesa 26.2.2 (git-d5b1f3fc3f) id=24
+pipelineCacheUUID=bbb88c411731c14c52b45a3fef3a5999 timestampPeriod_ns=1.000000
+  [vk/INFO] ../../../src/nouveau/vulkan/nvk_shader.c:948: NVK_SUBTILING sm=53 requested=0x20164010 selected=0x20164010 no_t210=0
+cold probe (not a steady-state result): frag_gpu_ms=4.777152 comp_gpu_ms=6.270912
+clocks cold-before: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+clocks cold-after: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warmup: 2007.268 ms, 111 fragment/compute pairs (minimum 2000 ms and 16 pairs)
+clocks post-warmup: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warm GPU ms: frag median=4.774208 min=4.772512 max=4.783264; comp median=6.269248 min=6.266048 max=6.273152
+READBACK phase=6 colour=0xb1884637f4710a21 compute=0xb81d92b31a9f5e31
+teardown: instance/device destroyed
+PHASE 8/10 requested=default knob=unset (driver choice) cache=enabled
+phase modes: operation=0 performance=0
+bringup: vkCreateInstance -> 0
+bringup: device 'NVIDIA Tegra X1 (NVK gm20b)' api=1.4.354 vendor=0x10de dev=0x0
+bringup: vkCreateDevice -> 0
+driver: name=NVK info=Mesa 26.2.2 (git-d5b1f3fc3f) id=24
+pipelineCacheUUID=bbb88c411731c14c52b45a3fef3a5999 timestampPeriod_ns=1.000000
+  [vk/INFO] ../../../src/nouveau/vulkan/nvk_shader.c:948: NVK_SUBTILING sm=53 requested=0x00000000 selected=0x087f6080 no_t210=0
+cold probe (not a steady-state result): frag_gpu_ms=3.833120 comp_gpu_ms=6.270432
+clocks cold-before: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+clocks cold-after: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warmup: 2001.980 ms, 121 fragment/compute pairs (minimum 2000 ms and 16 pairs)
+clocks post-warmup: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warm GPU ms: frag median=3.829472 min=3.828544 max=3.831456; comp median=6.270112 min=6.265760 max=6.273600
+READBACK phase=7 colour=0xb1884637f4710a21 compute=0xb81d92b31a9f5e31
+teardown: instance/device destroyed
+PHASE 9/10 requested=t210 knob=0x087f6080 cache=enabled
+phase modes: operation=0 performance=0
+bringup: vkCreateInstance -> 0
+bringup: device 'NVIDIA Tegra X1 (NVK gm20b)' api=1.4.354 vendor=0x10de dev=0x0
+bringup: vkCreateDevice -> 0
+driver: name=NVK info=Mesa 26.2.2 (git-d5b1f3fc3f) id=24
+pipelineCacheUUID=bbb88c411731c14c52b45a3fef3a5999 timestampPeriod_ns=1.000000
+  [vk/INFO] ../../../src/nouveau/vulkan/nvk_shader.c:948: NVK_SUBTILING sm=53 requested=0x087f6080 selected=0x087f6080 no_t210=0
+cold probe (not a steady-state result): frag_gpu_ms=3.857440 comp_gpu_ms=6.269600
+clocks cold-before: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+clocks cold-after: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warmup: 2002.165 ms, 121 fragment/compute pairs (minimum 2000 ms and 16 pairs)
+clocks post-warmup: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warm GPU ms: frag median=3.830432 min=3.828128 max=3.855200; comp median=6.270432 min=6.266688 max=6.272864
+READBACK phase=8 colour=0xb1884637f4710a21 compute=0xb81d92b31a9f5e31
+teardown: instance/device destroyed
+PHASE 10/10 requested=default knob=unset (driver choice) cache=enabled
+phase modes: operation=0 performance=0
+bringup: vkCreateInstance -> 0
+bringup: device 'NVIDIA Tegra X1 (NVK gm20b)' api=1.4.354 vendor=0x10de dev=0x0
+bringup: vkCreateDevice -> 0
+driver: name=NVK info=Mesa 26.2.2 (git-d5b1f3fc3f) id=24
+pipelineCacheUUID=bbb88c411731c14c52b45a3fef3a5999 timestampPeriod_ns=1.000000
+  [vk/INFO] ../../../src/nouveau/vulkan/nvk_shader.c:948: NVK_SUBTILING sm=53 requested=0x00000000 selected=0x087f6080 no_t210=0
+cold probe (not a steady-state result): frag_gpu_ms=3.833888 comp_gpu_ms=6.270208
+clocks cold-before: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+clocks cold-after: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warmup: 2002.094 ms, 121 fragment/compute pairs (minimum 2000 ms and 16 pairs)
+clocks post-warmup: CPU=2703000000 valid=1 rc=0x00000000 GPU=1497600000 valid=1 rc=0x00000000 EMC=2666000000 valid=1 rc=0x00000000 (Hz reported by service)
+warm GPU ms: frag median=3.829376 min=3.828256 max=3.830624; comp median=6.269728 min=6.266144 max=6.275520
+READBACK phase=9 colour=0xb1884637f4710a21 compute=0xb81d92b31a9f5e31
+teardown: instance/device destroyed
+SUMMARY: phase requested frag_gpu_median_ms comp_gpu_median_ms timing
+SUMMARY 0 default 3.829120 6.268480 GPU
+SUMMARY 1 t210 3.829664 6.269184 GPU
+SUMMARY 2 generic 4.773408 6.268000 GPU
+SUMMARY 3 t210 3.829856 6.269888 GPU
+SUMMARY 4 generic 4.774080 6.269728 GPU
+SUMMARY 5 default 3.830560 6.269824 GPU
+SUMMARY 6 generic 4.774208 6.269248 GPU
+SUMMARY 7 default 3.829472 6.270112 GPU
+SUMMARY 8 t210 3.830432 6.270432 GPU
+SUMMARY 9 default 3.829376 6.269728 GPU
+No automatic speedup verdict: compare warm pairs, clock snapshots, emitted knob traces and repeated defaults.
+completed 10/10 phases; build-id=4662fe0a6c3486588f56fb4f9c0ab7422ae595f83b17e3dfdf031c84909a5b79
+=== nvk_subtile_diag PASSED ===
