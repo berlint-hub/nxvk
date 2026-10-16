@@ -1,6 +1,0 @@
-nxvk milestone ladder, 2 apps, from sdmc:/switch/nxvk-tests
-
-build-id: 4662fe0a6c3486588f56fb4f9c0ab7422ae595f83b17e3dfdf031c84909a5b79
-
-PASS nvk_subtile_diag   === nvk_subtile_diag PASSED ===
-PASS nvk_subtile_nocache === nvk_subtile_nocache PASSED ===
