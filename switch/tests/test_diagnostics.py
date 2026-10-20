@@ -91,10 +91,10 @@ class DiagnosticTests(unittest.TestCase):
     def test_diagnostic_runner_has_only_two_probes(self):
         self.assertEqual(self.runner_apps('NVK_DIAGNOSTIC'), ['nvk_subtile_diag', 'nvk_subtile_nocache'])
 
-    def test_regular_vulkan_suite_is_still_22_apps(self):
+    def test_regular_vulkan_suite_is_still_23_apps(self):
         listed = subprocess.check_output(['bash', str(ROOT/'switch/build/build-vulkan-tests.sh'), '--list'], text=True).splitlines()
         expected = sorted(a for a in listed if a != 'nvk_runner')
-        self.assertEqual(len(expected), 22)
+        self.assertEqual(len(expected), 23)
         self.assertEqual(sorted(self.runner_apps('NVK_VULKAN_ONLY')), expected)
         self.assertFalse(any('diag' in a or 'nocache' in a for a in expected))
 
