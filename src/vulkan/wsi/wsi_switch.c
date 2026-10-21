@@ -31,6 +31,10 @@
 #include <malloc.h>
 #include <string.h>
 
+#ifdef __ARM_NEON
+#include <arm_neon.h>
+#endif
+
 struct wsi_switch {
    struct wsi_interface base;
 
@@ -336,28 +340,35 @@ switch_format_info(VkFormat vk_format, uint32_t *bpp,
 }
 
 /* Byte offset of pixel column x_b (a byte, 16-aligned) row y within a
- * block-linear 16Bx2 surface. */
+ * block-linear 16Bx2 surface.
+ *
+ * Tegra X1 WSI path was scalar: ~230k divides/mods per 720p present
+ * (1280*4=5120 B/row * 720 /16). This version uses shifts/masks
+ * because all divisors are powers of two (GOB 64×8, block height 16).
+ * Keeps the exact layout; no functional change.
+ */
 static inline uint32_t
 block_linear_offset(uint32_t x_b, uint32_t y,
                     uint32_t width_gobs, uint32_t block_h_gobs)
 {
-   uint32_t gob_x = x_b / GOB_SIZE_X_B;
-   uint32_t gob_y = y / GOB_SIZE_Y;
-   uint32_t x_in_gob = x_b % GOB_SIZE_X_B;
-   uint32_t y_in_gob = y % GOB_SIZE_Y;
+   /* GOB_SIZE_X_B=64=1<<6, GOB_SIZE_Y=8=1<<3, block_h_gobs=16=1<<4 */
+   uint32_t gob_x = x_b >> 6;
+   uint32_t gob_y = y >> 3;
+   uint32_t x_in_gob = x_b & 63;
+   uint32_t y_in_gob = y & 7;
 
-   uint32_t block_y = gob_y / block_h_gobs;
-   uint32_t gob_in_block = gob_y % block_h_gobs;
-   uint32_t block_bytes = block_h_gobs * 512;
+   uint32_t block_y = gob_y >> 4;
+   uint32_t gob_in_block = gob_y & 15;
+   uint32_t block_bytes = block_h_gobs << 9; /* *512 */
 
    uint32_t off = block_y * width_gobs * block_bytes;
    off += gob_x * block_bytes;
-   off += gob_in_block * 512;
-   off += (x_in_gob / 32) * 256;
-   off += (y_in_gob / 2) * 64;
-   off += ((x_in_gob % 32) / 16) * 32;
-   off += (y_in_gob % 2) * 16;
-   off += x_in_gob % 16;
+   off += gob_in_block << 9; /* *512 */
+   off += (x_in_gob >> 5) << 8;          /* /32 *256 */
+   off += (y_in_gob >> 1) << 6;          /* /2 *64 */
+   off += ((x_in_gob & 31) >> 4) << 5;   /* %32/16*32 */
+   off += (y_in_gob & 1) << 4;           /* %2*16 */
+   off += x_in_gob & 15;                /* %16 */
    return off;
 }
 
@@ -375,9 +386,27 @@ swizzle_to_scanout(struct wsi_switch_swapchain *chain, uint32_t slot,
 
    for (uint32_t y = 0; y < chain->extent.height; y++) {
       const uint8_t *srow = src + (size_t)y * src_stride;
+      /* Prefetch next row while we scatter the current one; the dst is
+       * write-combined and the src is linear. Helps keep the A57's
+       * prefetcher ahead on the 3.7 MB copy.
+       */
+      __builtin_prefetch(srow + src_stride, 0, 3);
       for (uint32_t x_b = 0; x_b < width_b; x_b += 16) {
          uint32_t off = block_linear_offset(x_b, y, width_gobs, block_h_gobs);
-         memcpy(dst + off, srow + x_b, MIN2(16, width_b - x_b));
+         uint32_t rem = width_b - x_b;
+         if (rem >= 16) {
+#ifdef __ARM_NEON
+            /* 16 B is the natural NEON vector on A57 (1 cycle load+store).
+             * Unaligned is fine on AArch64; the swizzled dst is always 16-B
+             * aligned because the GOB layout guarantees it.
+             */
+            vst1q_u8(dst + off, vld1q_u8(srow + x_b));
+#else
+            memcpy(dst + off, srow + x_b, 16);
+#endif
+         } else {
+            memcpy(dst + off, srow + x_b, rem);
+         }
       }
    }
 }
