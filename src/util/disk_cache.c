@@ -82,31 +82,19 @@ disk_cache_init_queue(struct disk_cache *cache)
    if (util_queue_is_initialized(&cache->cache_queue))
       return true;
 
-   /* Tegra X1: Horizon grants 3 cores to applets and 4 to full-memory games.
-    * The old comment \"all modern CPUs have at least 4 cores\" is true on
-    * desktop, but on Switch 4 workers + main thread + the emulator's EE/GS/MTVU
-    * oversubscribe the 3-core applet mask. At minimum priority each extra
-    * worker still competes for the same cores. Size the pool from the actual
-    * Horizon mask when we are on Horizon, otherwise keep the desktop default of
-    * 4. The queue will resize automatically when it's full, so adding new jobs
-    * doesn't stall.
+   /* On Horizon the mask is 0x7 (applet, 3 cores) or 0xf (full-mem, 4 cores
+    * — your GT3 run). Size the shader-cache pool to that mask; you asked
+    * for all 4, so no "-1" reservation. The queue will resize when full,
+    * so adding jobs doesn't stall.
     */
    unsigned nthreads = 4;
 #if DETECT_OS_HORIZON
    {
-      /* util_cpu_detect already honours InfoType_CoreMask on Horizon; query
-       * it instead of assuming 4. Leave one core for the foreground thread
-       * when we have more than one.
-       */
-      /* util_get_cpu_caps from u_cpu_detect.h */
+      /* util_get_cpu_caps() already honours InfoType_CoreMask */
       unsigned horizon_cpus = util_get_cpu_caps()->nr_cpus;
-      if (horizon_cpus == 0)
-         horizon_cpus = 4;
-      if (horizon_cpus > 1)
-         nthreads = horizon_cpus - 1;
-      else
-         nthreads = 1;
-      if (nthreads > 4)
+      if (horizon_cpus >= 1 && horizon_cpus <= 4)
+         nthreads = horizon_cpus;
+      else if (horizon_cpus > 4)
          nthreads = 4;
    }
 #endif
