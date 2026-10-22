@@ -148,6 +148,7 @@ Set these before instance creation for the run you want to discuss:
 | `MESA_SHADER_CACHE_SHOW_STATS=1` | the store's open line (entries, size) and close line (blobs, appends, duplicates, header publications) |
 | `NVK_DEBUG=wsi` | the per-swapchain present statistics quoted above |
 | `NVK_DEBUG=vm` | arena flush counters |
+| `NVK_LOW_LATENCY=1` | 2 swapchain images instead of 3, `MAILBOX` present, `vkAcquireNextImageKHR` never blocks (`VK_NOT_READY` when the single NWindow slot is held — your loop must retry). Logs `nvk wsi: low-latency on, 2 images, mode MAILBOX`, which is the line to quote in an A/B against the default 3-image path |
 | `MESA_SHADER_CACHE_COMMIT=per-blob` | same-build A/B of the batched header publication |
 
 Worth sending back, in this order:

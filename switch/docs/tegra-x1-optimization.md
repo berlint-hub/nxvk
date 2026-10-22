@@ -157,6 +157,26 @@ selection, Cortex-A57 targeting and NEON selection are retained, not presented
 as newly implemented optimizations. No fast-math, forced register cap, affinity
 change, extra worker threads, GPU clock setter or relaxed GPU barrier is added.
 
+## Optional low-latency WSI (`NVK_LOW_LATENCY=1`, off by default)
+
+`src/vulkan/wsi/wsi_switch.c` keeps the 3-image FIFO path untouched unless the
+variable is set at swapchain creation:
+
+- surface capabilities report `minImageCount = maxImageCount = 2`;
+- the swapchain allocates 2 images (one frame in flight), saving one 1280×720
+  scanout buffer and the compositor bandwidth that goes with it;
+- the present mode is forced to `MAILBOX` (compositor may drop a late frame
+  instead of queueing it), with `FIFO` as the fallback if it is not advertised;
+- `vkAcquireNextImageKHR` uses a 0 timeout, so it returns `VK_NOT_READY`
+  instead of parking the CPU. An application must retry that result; a title
+  that treats it as fatal will not run on this path.
+
+Creation logs `nvk wsi: low-latency on, 2 images, mode MAILBOX`. This is a
+latency/RAM-bandwidth knob, not an FPS optimization: on a title that is already
+GPU-bound the steady frame rate is unchanged and a hitch that used to be
+absorbed by the third buffer becomes visible. No hardware A/B is recorded for
+it yet.
+
 ## Recorded hardware validation
 
 The [identified build #7 result](https://github.com/berlint-hub/nxvk/blob/arena/068e6f2f-nxvk/switch/docs/build-7-validation.md)

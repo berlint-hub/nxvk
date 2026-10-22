@@ -29,7 +29,9 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #ifdef __ARM_NEON
 #include <arm_neon.h>
@@ -55,12 +57,43 @@ wsi_switch_surface_get_support(VkIcdSurfaceBase *surface,
 }
 
 #define WSI_SWITCH_IMAGE_COUNT 3
+#define WSI_SWITCH_IMAGE_COUNT_LOW_LATENCY 2
 
 static const VkPresentModeKHR present_modes[] = {
    VK_PRESENT_MODE_FIFO_KHR,
    VK_PRESENT_MODE_MAILBOX_KHR,
    VK_PRESENT_MODE_IMMEDIATE_KHR,
 };
+
+/* NVK_LOW_LATENCY=1: 2 swapchain images, MAILBOX present, acquire never
+ * queues. Opt-in, off by default — the 3-image FIFO path stays untouched.
+ */
+static bool
+wsi_switch_is_low_latency(void)
+{
+   const char *env = getenv("NVK_LOW_LATENCY");
+   if (env == NULL)
+      return false;
+   return env[0] == '1' || strcasecmp(env, "true") == 0 ||
+          strcasecmp(env, "on") == 0;
+}
+
+static uint32_t
+wsi_switch_image_count(void)
+{
+   return wsi_switch_is_low_latency() ? WSI_SWITCH_IMAGE_COUNT_LOW_LATENCY
+                                      : WSI_SWITCH_IMAGE_COUNT;
+}
+
+static VkPresentModeKHR
+wsi_switch_low_latency_present_mode(void)
+{
+   /* MAILBOX > IMMEDIATE > FIFO. libnx nwindow only has a swap interval, so
+    * MAILBOX is the mode that lets the compositor drop a late frame instead
+    * of queueing it.
+    */
+   return VK_PRESENT_MODE_MAILBOX_KHR;
+}
 
 static VkResult
 wsi_switch_surface_get_capabilities(VkIcdSurfaceBase *icd_surface,
@@ -84,8 +117,8 @@ wsi_switch_surface_get_capabilities(VkIcdSurfaceBase *icd_surface,
       wsi_device->maxImageDimension2D,
    };
 
-   caps->minImageCount = WSI_SWITCH_IMAGE_COUNT;
-   caps->maxImageCount = WSI_SWITCH_IMAGE_COUNT;
+   caps->minImageCount = wsi_switch_image_count();
+   caps->maxImageCount = wsi_switch_image_count();
 
    caps->supportedTransforms = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
    caps->currentTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
@@ -292,6 +325,9 @@ struct wsi_switch_swapchain {
    int32_t dequeued_slot;
 
    bool zero_copy;
+
+   /* NVK_LOW_LATENCY=1: 2 images, MAILBOX, acquire never blocks. */
+   bool low_latency;
 
    /* Old present path for NVK_DEBUG=cpu_present. */
    bool cpu_present;
@@ -575,18 +611,25 @@ wsi_switch_swapchain_acquire_next_image(struct wsi_swapchain *wsi_chain,
    if (chain->window == NULL)
       return VK_ERROR_SURFACE_LOST_KHR;
 
+   /* Low latency: never park the CPU in acquire — one frame in flight. */
+   const uint64_t timeout = chain->low_latency ? 0 : info->timeout;
+
    /* An NWindow checks out one slot at a time, so a second acquire has nothing
     * to hand back. Report that instead of cancelling the held slot.
     */
    if (chain->dequeued_slot >= 0)
-      return info->timeout == 0 ? VK_NOT_READY : VK_TIMEOUT;
+      return timeout == 0 ? VK_NOT_READY : VK_TIMEOUT;
 
    s32 slot = -1;
    VkResult result;
-   if (chain->cpu_present || !eventActive(&chain->window->event))
+   if (chain->low_latency) {
+      /* Never fall into the blocking libnx dequeue; report NOT_READY. */
+      result = wsi_switch_dequeue_nonblocking(chain, 0, &slot);
+   } else if (chain->cpu_present || !eventActive(&chain->window->event)) {
       result = wsi_switch_dequeue_libnx(chain, &slot);
-   else
-      result = wsi_switch_dequeue_nonblocking(chain, info->timeout, &slot);
+   } else {
+      result = wsi_switch_dequeue_nonblocking(chain, timeout, &slot);
+   }
 
    if (result != VK_SUCCESS)
       return result;
@@ -998,7 +1041,9 @@ wsi_switch_surface_create_swapchain(VkIcdSurfaceBase *icd_surface,
                            &pixel_format))
       return VK_ERROR_INITIALIZATION_FAILED;
 
-   const uint32_t num_images = WSI_SWITCH_IMAGE_COUNT;
+   const bool low_latency = wsi_switch_is_low_latency();
+   const uint32_t num_images = low_latency ? WSI_SWITCH_IMAGE_COUNT_LOW_LATENCY
+                                           : WSI_SWITCH_IMAGE_COUNT;
 
    struct wsi_switch_swapchain *chain;
    size_t size = sizeof(*chain) + num_images * sizeof(chain->images[0]);
@@ -1021,7 +1066,9 @@ wsi_switch_surface_create_swapchain(VkIcdSurfaceBase *icd_surface,
    chain->base.get_wsi_image = wsi_switch_swapchain_get_wsi_image;
    chain->base.acquire_next_image = wsi_switch_swapchain_acquire_next_image;
    chain->base.queue_present = wsi_switch_swapchain_queue_present;
-   chain->base.present_mode = wsi_swapchain_get_present_mode(wsi_device, pCreateInfo);
+   chain->base.present_mode = low_latency
+      ? wsi_switch_low_latency_present_mode()
+      : wsi_swapchain_get_present_mode(wsi_device, pCreateInfo);
    chain->base.image_count = num_images;
    chain->extent = pCreateInfo->imageExtent;
    chain->vk_format = pCreateInfo->imageFormat;
@@ -1032,6 +1079,7 @@ wsi_switch_surface_create_swapchain(VkIcdSurfaceBase *icd_surface,
    chain->pixel_format = pixel_format;
    chain->cpu_present = wsi_device->vi.force_cpu_present;
    chain->debug = wsi_device->vi.debug;
+   chain->low_latency = low_latency;
 
    wsi_switch_adopt_window(chain, pCreateInfo->oldSwapchain);
 
@@ -1053,6 +1101,14 @@ wsi_switch_surface_create_swapchain(VkIcdSurfaceBase *icd_surface,
                 (int)chain->base.present_mode, swap_interval,
                 chain->zero_copy ? "on" : "off",
                 chain->cpu_present ? "cpu" : "compositor synced");
+   }
+   if (low_latency) {
+      mesa_logi("nvk wsi: low-latency on, %u images, mode %s",
+                num_images,
+                chain->base.present_mode == VK_PRESENT_MODE_MAILBOX_KHR
+                   ? "MAILBOX"
+                   : chain->base.present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR
+                        ? "IMMEDIATE" : "FIFO");
    }
 
    *swapchain_out = &chain->base;
