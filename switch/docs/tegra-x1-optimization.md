@@ -165,17 +165,26 @@ variable is set at swapchain creation:
 - surface capabilities report `minImageCount = maxImageCount = 2`;
 - the swapchain allocates 2 images (one frame in flight), saving one 1280×720
   scanout buffer and the compositor bandwidth that goes with it;
-- the present mode is forced to `MAILBOX` (compositor may drop a late frame
-  instead of queueing it), with `FIFO` as the fallback if it is not advertised;
+- the present mode is the application's own `MAILBOX`/`IMMEDIATE` request if it
+  made one, otherwise `MAILBOX`. Whichever wins, the swap interval is 0;
 - `vkAcquireNextImageKHR` uses a 0 timeout, so it returns `VK_NOT_READY`
   instead of parking the CPU. An application must retry that result; a title
   that treats it as fatal will not run on this path.
 
-Creation logs `nvk wsi: low-latency on, 2 images, mode MAILBOX`. This is a
-latency/RAM-bandwidth knob, not an FPS optimization: on a title that is already
-GPU-bound the steady frame rate is unchanged and a hitch that used to be
-absorbed by the third buffer becomes visible. No hardware A/B is recorded for
-it yet.
+The swap interval is the part that matters, because it is the only presentation
+control Horizon exposes: `nwindowQueueBuffer()` passes it to VI as
+`bqinput.swapInterval`, and interval 1 means "wait for vblank" for **every**
+mode. Mapping `MAILBOX` to 1, as this path did until 2026-10-24, therefore made
+it byte-for-byte `FIFO` with one buffer removed — the "drop the late frame"
+behaviour the mode is named for never happened. The default 3-image path keeps
+interval 1 for `MAILBOX` so no existing application changes behaviour.
+
+Creation logs `nvk wsi: low-latency on, 2 images, mode MAILBOX, swap interval 0
+(requested MAILBOX)`. This is a latency/RAM-bandwidth knob, not an FPS
+optimization: on a title that is already GPU-bound the steady frame rate is
+unchanged and a hitch that used to be absorbed by the third buffer becomes
+visible. Interval 0 is not vblank-locked, so tearing is possible; that trade is
+why the mode is opt-in. No hardware A/B is recorded for it yet.
 
 ## Recorded hardware validation
 

@@ -22,8 +22,21 @@ def define(code, name):
     return code[start:code.index('\n', start) + 1]
 
 
+def variable(code, signature):
+    start = code.index(signature)
+    return code[start:code.index('\n};', start) + 3] + '\n'
+
+
 wsi = (src/'src/vulkan/wsi/wsi_switch.c').read_text()
 (out/'wsi_switch_queue_present.inc').write_text(function(wsi, 'static VkResult\nwsi_switch_swapchain_queue_present('))
+# Present-mode policy: the advertised mode table, then the three helpers that
+# decide what a swapchain gets. Kept together because the second and third read
+# the first, and a host test must exercise the same bodies the driver runs.
+(out/'wsi_present_mode.inc').write_text(
+    variable(wsi, 'static const VkPresentModeKHR present_modes[] =') +
+    function(wsi, 'static bool\nwsi_switch_present_mode_supported(') +
+    function(wsi, 'static VkPresentModeKHR\nwsi_switch_low_latency_present_mode(') +
+    function(wsi, 'static uint32_t\nwsi_switch_swap_interval('))
 md = (src/'src/nouveau/vulkan/nvkmd/nvkmd.h').read_text()
 (out/'arena_enums.inc').write_text(declaration(md, 'enum nvkmd_mem_flags {') + declaration(md, 'enum nvkmd_mem_map_flags {'))
 (out/'arena_cacheable.inc').write_text(function(md, 'static inline bool\nnvkmd_mem_is_cpu_cacheable('))

@@ -121,7 +121,12 @@ size_t __nx_heap_size   = 0;
   `VK_KHR_swapchain` on the device; create the surface with
   `vkCreateViSurfaceNN()` over your `NWindow` (or `nwindowGetDefault()`), and
   use `minImageCount = 3`.
-- Present modes: FIFO, MAILBOX, IMMEDIATE.
+- Present modes: FIFO, MAILBOX, IMMEDIATE. Horizon has one knob behind all
+  three — VI's swap interval — so `MAILBOX` and `IMMEDIATE` are only distinct
+  from `FIFO` when the interval is 0. FIFO always gets interval 1 and
+  IMMEDIATE always gets 0; MAILBOX gets 0 only under `NVK_LOW_LATENCY=1` and
+  stays vblank-locked (identical to FIFO) on the default path, so an existing
+  application cannot start tearing because it named MAILBOX.
 - Scanout is zero-copy only for a single-plane image whose `pte_kind` is `0xfe`.
   Otherwise the driver swizzles the whole image on the CPU per present and
   flushes the data cache (~3.7 MB at 720p). `NVK_DEBUG=wsi` prints which path a
@@ -148,7 +153,7 @@ Set these before instance creation for the run you want to discuss:
 | `MESA_SHADER_CACHE_SHOW_STATS=1` | the store's open line (entries, size) and close line (blobs, appends, duplicates, header publications) |
 | `NVK_DEBUG=wsi` | the per-swapchain present statistics quoted above |
 | `NVK_DEBUG=vm` | arena flush counters |
-| `NVK_LOW_LATENCY=1` | 2 swapchain images instead of 3, `MAILBOX` present, `vkAcquireNextImageKHR` never blocks (`VK_NOT_READY` when the single NWindow slot is held — your loop must retry). Logs `nvk wsi: low-latency on, 2 images, mode MAILBOX`, which is the line to quote in an A/B against the default 3-image path |
+| `NVK_LOW_LATENCY=1` | 2 swapchain images instead of 3, swap interval 0 so presents are not paced to vblank, and `vkAcquireNextImageKHR` never blocks (`VK_NOT_READY` when the single NWindow slot is held — your loop must retry). Your own `MAILBOX`/`IMMEDIATE` request is honoured; anything else becomes `MAILBOX`, which is unthrottled only on this path. Expect tearing, and expect hitches that the third buffer used to hide. Logs `nvk wsi: low-latency on, 2 images, mode <MODE>, swap interval 0 (requested <MODE>)`, which is the line to quote in an A/B against the default 3-image path |
 | `MESA_SHADER_CACHE_COMMIT=per-blob` | same-build A/B of the batched header publication |
 
 Worth sending back, in this order:

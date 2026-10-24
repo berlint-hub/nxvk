@@ -65,8 +65,10 @@ static const VkPresentModeKHR present_modes[] = {
    VK_PRESENT_MODE_IMMEDIATE_KHR,
 };
 
-/* NVK_LOW_LATENCY=1: 2 swapchain images, MAILBOX present, acquire never
- * queues. Opt-in, off by default — the 3-image FIFO path stays untouched.
+/* NVK_LOW_LATENCY=1: 2 swapchain images, an unthrottled present mode (the
+ * application's own MAILBOX/IMMEDIATE request, otherwise MAILBOX) with swap
+ * interval 0, and acquire never queues. Opt-in, off by default — the 3-image
+ * FIFO path stays untouched.
  */
 static bool
 wsi_switch_is_low_latency(void)
@@ -85,14 +87,69 @@ wsi_switch_image_count(void)
                                       : WSI_SWITCH_IMAGE_COUNT;
 }
 
-static VkPresentModeKHR
-wsi_switch_low_latency_present_mode(void)
+static bool
+wsi_switch_present_mode_supported(VkPresentModeKHR mode)
 {
-   /* MAILBOX > IMMEDIATE > FIFO. libnx nwindow only has a swap interval, so
-    * MAILBOX is the mode that lets the compositor drop a late frame instead
-    * of queueing it.
-    */
+   for (unsigned i = 0; i < ARRAY_SIZE(present_modes); i++) {
+      if (present_modes[i] == mode)
+         return true;
+   }
+   return false;
+}
+
+/* NVK_LOW_LATENCY=1 still means "one frame in flight", so an application that
+ * asked for an unthrottled mode keeps it; everything else gets MAILBOX. The
+ * earlier version substituted MAILBOX unconditionally, which discarded the
+ * request of a title that had already chosen IMMEDIATE itself.
+ */
+static VkPresentModeKHR
+wsi_switch_low_latency_present_mode(VkPresentModeKHR requested)
+{
+   if (wsi_switch_present_mode_supported(requested) &&
+       requested != VK_PRESENT_MODE_FIFO_KHR)
+      return requested;
    return VK_PRESENT_MODE_MAILBOX_KHR;
+}
+
+/* libnx's NWindow has exactly one presentation knob: swap_interval, which
+ * nwindowQueueBuffer() passes to VI as bqinput.swapInterval. It only says
+ * whether the compositor waits for vblank before latching the buffer:
+ *
+ *   interval 1 — paced to the panel refresh, i.e. vblank-locked
+ *   interval 0 — queue immediately; the newest buffer wins
+ *
+ * There is no separate MAILBOX queue on Horizon, so mapping MAILBOX to
+ * interval 1 made it byte-for-byte FIFO: the "drop the late frame" behaviour
+ * the mode exists for only happens at interval 0. IMMEDIATE already mapped to
+ * 0; this makes MAILBOX do the same on the opt-in low-latency path.
+ *
+ * The default 3-image path keeps interval 1 for MAILBOX, exactly as before:
+ * an application that was written against today's behaviour must not start
+ * tearing because it mentioned MAILBOX.
+ */
+static uint32_t
+wsi_switch_swap_interval(VkPresentModeKHR mode, bool low_latency)
+{
+   if (mode == VK_PRESENT_MODE_FIFO_KHR)
+      return 1;
+   if (mode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+      return 0;
+   return low_latency ? 0u : 1u; /* MAILBOX */
+}
+
+static const char *
+wsi_switch_present_mode_name(VkPresentModeKHR mode)
+{
+   switch (mode) {
+   case VK_PRESENT_MODE_FIFO_KHR:
+      return "FIFO";
+   case VK_PRESENT_MODE_MAILBOX_KHR:
+      return "MAILBOX";
+   case VK_PRESENT_MODE_IMMEDIATE_KHR:
+      return "IMMEDIATE";
+   default:
+      return "other";
+   }
 }
 
 static VkResult
@@ -326,7 +383,7 @@ struct wsi_switch_swapchain {
 
    bool zero_copy;
 
-   /* NVK_LOW_LATENCY=1: 2 images, MAILBOX, acquire never blocks. */
+   /* NVK_LOW_LATENCY=1: 2 images, swap interval 0, acquire never blocks. */
    bool low_latency;
 
    /* Old present path for NVK_DEBUG=cpu_present. */
@@ -1067,7 +1124,7 @@ wsi_switch_surface_create_swapchain(VkIcdSurfaceBase *icd_surface,
    chain->base.acquire_next_image = wsi_switch_swapchain_acquire_next_image;
    chain->base.queue_present = wsi_switch_swapchain_queue_present;
    chain->base.present_mode = low_latency
-      ? wsi_switch_low_latency_present_mode()
+      ? wsi_switch_low_latency_present_mode(pCreateInfo->presentMode)
       : wsi_swapchain_get_present_mode(wsi_device, pCreateInfo);
    chain->base.image_count = num_images;
    chain->extent = pCreateInfo->imageExtent;
@@ -1090,25 +1147,26 @@ wsi_switch_surface_create_swapchain(VkIcdSurfaceBase *icd_surface,
    if (result != VK_SUCCESS)
       goto fail;
 
-   uint32_t swap_interval =
-      chain->base.present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR ? 0 : 1;
+   const uint32_t swap_interval =
+      wsi_switch_swap_interval(chain->base.present_mode, low_latency);
    nwindowSetSwapInterval(chain->window, swap_interval);
 
    if (chain->debug) {
-      mesa_logi("nvk wsi: %ux%u, %u images, present mode %d, swap interval %u, "
-                "zero-copy %s, %s present",
+      mesa_logi("nvk wsi: %ux%u, %u images, present mode %d (%s), swap interval "
+                "%u, zero-copy %s, %s present",
                 chain->extent.width, chain->extent.height, num_images,
-                (int)chain->base.present_mode, swap_interval,
-                chain->zero_copy ? "on" : "off",
+                (int)chain->base.present_mode,
+                wsi_switch_present_mode_name(chain->base.present_mode),
+                swap_interval, chain->zero_copy ? "on" : "off",
                 chain->cpu_present ? "cpu" : "compositor synced");
    }
    if (low_latency) {
-      mesa_logi("nvk wsi: low-latency on, %u images, mode %s",
+      mesa_logi("nvk wsi: low-latency on, %u images, mode %s, swap interval %u "
+                "(requested %s)",
                 num_images,
-                chain->base.present_mode == VK_PRESENT_MODE_MAILBOX_KHR
-                   ? "MAILBOX"
-                   : chain->base.present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR
-                        ? "IMMEDIATE" : "FIFO");
+                wsi_switch_present_mode_name(chain->base.present_mode),
+                swap_interval,
+                wsi_switch_present_mode_name(pCreateInfo->presentMode));
    }
 
    *swapchain_out = &chain->base;
